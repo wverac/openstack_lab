@@ -70,7 +70,7 @@ stack@ubuntu:~/devstack$
 ```
 You can also access to the dashboard trough 
 ```
-http://localhost:80
+http://localhost
 ```
 ![OpenStack_Dashboard](https://github.com/wverac/openstack_lab/blob/main/assets/openstack_demo.png)
 
