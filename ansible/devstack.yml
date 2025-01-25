@@ -1,0 +1,114 @@
+---
+- name: Install DevStack in Ubuntu 22.05 (jammy) VM
+  hosts: openstack_vm
+  gather_facts: no
+  become: yes
+
+  vars:
+    devstack_user: stack
+    devstack_home: /opt/stack
+    devstack_shell: /bin/bash
+    devstack_repo: https://opendev.org/openstack/devstack
+
+  tasks:
+    - name: SO Update
+      apt:
+        update_cache: yes
+        upgrade: dist
+
+    - name: Create 'stack' user
+      user:
+        name: "{{ devstack_user }}"
+        shell: "{{ devstack_shell }}"
+        home: "{{ devstack_home }}"
+        createhome: yes
+        state: present
+
+    - name: Allow 'stack' user to have passwordless sudo
+      lineinfile:
+       path: /etc/sudoers
+       insertafter: EOF
+       line: '{{ devstack_user }} ALL=(ALL) NOPASSWD:ALL'
+       validate: 'visudo -cf %s'
+
+
+    - name: Assign the proper permissions to home directory
+      file:
+        path: "{{ devstack_home }}"
+        state: directory
+        owner: "{{ devstack_user }}"
+        group: "{{ devstack_user }}"
+        mode: 0751
+
+    - name: Clone DevStack repo
+      shell: git clone "{{ devstack_repo }}"
+      become: yes
+      become_user: "{{ devstack_user }}"
+      become_method: sudo
+      become_flags: '-i'
+      args:
+        chdir: "{{ devstack_home }}"
+      environment:
+        HOME: "{{ devstack_home }}"
+
+    - name: Create local.conf
+      copy:
+        dest: "{{ devstack_home }}/devstack/local.conf"
+        content: |
+          [[local|localrc]]
+          ADMIN_PASSWORD=secret
+          DATABASE_PASSWORD=$ADMIN_PASSWORD
+          RABBIT_PASSWORD=$ADMIN_PASSWORD
+          SERVICE_PASSWORD=$ADMIN_PASSWORD
+          LOGFILE=$DEST/logs/stack.sh.log
+          LOGDAYS=2
+        owner: "{{ devstack_user }}"
+        group: "{{ devstack_user }}"
+        mode: '0644'
+    - name: Run stack.sh
+      shell: |
+        set -e
+        cd {{ devstack_home }}/devstack
+        ./stack.sh
+      async: 7200
+      poll: 0
+      become: yes
+      become_user: "{{ devstack_user }}"
+      environment:
+        HOME: "{{ devstack_home }}"
+      args:
+        chdir: "{{ devstack_home }}/devstack"
+      register: run_stack_job
+
+    - name: DEBUG run_stack_job
+      debug:
+        var: run_stack_job
+
+    - name: Wait for stack.sh to complete (approximately 20-30 min)
+      async_status:
+        jid: "{{ run_stack_job.ansible_job_id }}"
+      register: job_result
+      until: job_result.finished
+      retries: 45
+      delay: 60
+      become: yes
+      become_user: "{{ devstack_user }}"
+
+    - name: Add custom Horizon settings to enable SSL
+      blockinfile:
+        path: /opt/stack/horizon/openstack_dashboard/local/local_settings.py
+        marker: "# {mark} ANSIBLE BLOCK - Enable Horizon SSL"
+        block: |
+          USE_SSL = True
+          CSRF_COOKIE_SECURE = True
+          SESSION_COOKIE_SECURE = True
+          SESSION_COOKIE_HTTPONLY = True
+          SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+      become: yes
+
+    - name: Restart apache2 service
+      service:
+        name: apache2
+        state: restarted
+      become: yes
+
