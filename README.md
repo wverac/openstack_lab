@@ -31,7 +31,7 @@ cd openstack_lab/ansible
 Export your Horizon password
 
 ```
-export ADMIN_PASSWORD="YOUR_HORIZON_PASSWORD_HERE"
+export ADMIN_PASSWORD="YOUR_ADMIN_PASSWORD_HERE"
 ```
 Deploy devstack
 ```
