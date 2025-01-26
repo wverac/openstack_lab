@@ -3,7 +3,7 @@
 Deploy an [OpenStack](https://www.openstack.org/) Lab in a single node with [DevStack](https://docs.openstack.org/devstack/latest/), [Terrafrom](https://terraform.io) and [Ansible](https://ansible.com)
 
 ## Deploy the local VM using terraform and libvirt as provider
-This will use your default ssh key to acces to the nodes
+This will use your default ssh key to acces to the node
 
 ```
 ~/.ssh/id_rsa.pub
