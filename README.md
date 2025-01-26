@@ -41,12 +41,6 @@ ssh to the OpenStack node
 ```
 ssh cloud@192.168.122.10
 ```
-
-
-You can also access to the dashboard trough 
-```
-https://localhost
-```
 Devstack use `stack` user, become the user, source the env file and test it
 
 ```
