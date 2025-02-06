@@ -26,11 +26,10 @@
 
     - name: Allow 'stack' user to have passwordless sudo
       lineinfile:
-       path: /etc/sudoers
-       insertafter: EOF
-       line: '{{ devstack_user }} ALL=(ALL) NOPASSWD:ALL'
-       validate: 'visudo -cf %s'
-
+        path: /etc/sudoers
+        insertafter: EOF
+        line: "{{ devstack_user }} ALL=(ALL) NOPASSWD:ALL"
+        validate: "visudo -cf %s"
 
     - name: Assign the proper permissions to home directory
       file:
@@ -45,7 +44,7 @@
       become: yes
       become_user: "{{ devstack_user }}"
       become_method: sudo
-      become_flags: '-i'
+      become_flags: "-i"
       args:
         chdir: "{{ devstack_home }}"
       environment:
@@ -56,7 +55,7 @@
         dest: "{{ devstack_home }}/devstack/local.conf"
         content: |
           [[local|localrc]]
-          ADMIN_PASSWORD=secret
+          ADMIN_PASSWORD={{ lookup('env', 'ADMIN_PASSWORD') }}
           DATABASE_PASSWORD=$ADMIN_PASSWORD
           RABBIT_PASSWORD=$ADMIN_PASSWORD
           SERVICE_PASSWORD=$ADMIN_PASSWORD
@@ -64,7 +63,7 @@
           LOGDAYS=2
         owner: "{{ devstack_user }}"
         group: "{{ devstack_user }}"
-        mode: '0644'
+        mode: "0644"
     - name: Run stack.sh
       shell: |
         set -e
@@ -111,4 +110,3 @@
         name: apache2
         state: restarted
       become: yes
-
